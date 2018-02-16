@@ -19,10 +19,10 @@ import upday.droidconmvvm.model.Language;
 public class MainActivity extends AppCompatActivity {
 
     @NonNull
-    private CompositeDisposable mCompositeDisposable;
+    private final ThreadLocal<CompositeDisposable> mCompositeDisposable = new ThreadLocal<>();
 
     @NonNull
-    private MainViewModel mViewModel;
+    private final ThreadLocal<MainViewModel> mViewModel = new ThreadLocal<>();
 
     @Nullable
     private TextView mGreetingView;
@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mViewModel = getViewModel();
+        mViewModel.set(getViewModel());
         setupViews();
     }
 
@@ -74,21 +74,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void bind() {
-        mCompositeDisposable = new CompositeDisposable();
+        mCompositeDisposable.set(new CompositeDisposable());
 
-        mCompositeDisposable.add(mViewModel.getGreeting()
+        mCompositeDisposable.get().add(mViewModel.get().getGreeting()
                                     .subscribeOn(Schedulers.computation())
                                     .observeOn(AndroidSchedulers.mainThread())
                                     .subscribe(this::setGreeting));
 
-        mCompositeDisposable.add(mViewModel.getSupportedLanguages()
+        mCompositeDisposable.get().add(mViewModel.get().getSupportedLanguages()
                                     .subscribeOn(Schedulers.computation())
                                     .observeOn(AndroidSchedulers.mainThread())
                                     .subscribe(this::setLanguages));
     }
 
     private void unBind() {
-        mCompositeDisposable.clear();
+        mCompositeDisposable.get().clear();
     }
 
     private void setGreeting(@NonNull final String greeting) {
@@ -112,9 +112,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void itemSelected(final int position) {
-        assert mLanguageSpinnerAdapter != null;
 
+        assert mLanguageSpinnerAdapter != null;
         Language languageSelected = mLanguageSpinnerAdapter.getItem(position);
-        mViewModel.languageSelected(languageSelected);
+        assert languageSelected != null;
+        mViewModel.get().languageSelected(languageSelected);
     }
 }
